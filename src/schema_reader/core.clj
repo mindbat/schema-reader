@@ -2,8 +2,8 @@
   (:require [clojure.java.jdbc :as sql])
 )
 
-;; define the database connection
-(def db 
+;; db connection for debugging
+(def *db* 
   {:subprotocol "postgresql" 
    :subname "//localhost:5432/schema_test"
    :username "schema_reader"
@@ -11,18 +11,32 @@
   }
 )
 
-(defn sql-query [q]
+(defn sql-query 
+  "Basic function for querying the database"
+  [db q]
   (seq (sql/with-connection db (sql/with-query-results res q (doall res))))
 )
 
-(defn get-table-list []
+;; get list of tables for the given database
+(defmulti get-table-list :subprotocol)
+
+(defmethod get-table-list "postgresql" [db]
   (map :tablename (sql-query
+    db
     [(str "SELECT tablename FROM pg_tables WHERE tablename NOT LIKE 'pg%' AND tablename NOT LIKE 'sql%';")])
   )
 )
 
-(defn get-table-schema [table]
+(defmethod get-table-list "mysql" [db]
+  (seq 1 2 3 4 5)
+)
+
+;; get list of columns for the given table
+(defmulti get-table-schema :subprotocol)
+
+(defmethod get-table-schema "postgresql" [db table]
   (sql-query
+    db
     [(str "SELECT attname
            FROM pg_attribute, pg_type
            WHERE typname = '" table "' AND attrelid = typrelid
@@ -31,9 +45,14 @@
   )
 )
 
-;; get a sequence of maps describing the db tables
-(defn get-db-schema []
-  (for [table (get-table-list)]
-    {:tablename table :columns (vec (map :attname (get-table-schema table)))}
+(defmethod get-table-schema "mysql" [db table]
+  {:attname "not-really-supported"}
+)
+
+(defn get-db-schema 
+  "Get a sequence of maps describing all the tables in the given database"
+  [db]
+  (for [table (get-table-list db)]
+    {:tablename table :columns (vec (map :attname (get-table-schema db table)))}
   )
 )
