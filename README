@@ -1,13 +1,11 @@
 # schema-reader
 
-FIXME: write description
+A clojure library for reading SQL schemas
 
 ## Usage
 
-FIXME: write
+Coming soon...
 
 ## License
-
-Copyright (C) 2010 FIXME
 
 Distributed under the Eclipse Public License, the same as Clojure.
